@@ -23,33 +23,10 @@ header[data-testid="stHeader"] { display: none; }
 /* サイドバーの開閉ボタンを非表示 */
 button[data-testid="stSidebarCollapseButton"] { display: none; }
 button[data-testid="stSidebarOpenButton"] { display: none; }
-
-/* ヘッダーバー（固定） */
-.tss-header {
-    background-color: #E60012;
-    padding: 22px 32px 18px 32px;
-    margin-bottom: 24px;
-    position: sticky;
-    top: 0;
-    z-index: 999;
-}
-.tss-header h1 {
-    color: #FFFFFF !important;
-    font-size: 3rem !important;
-    font-weight: 900 !important;
-    margin: 0 0 10px 0 !important;
-    letter-spacing: 0.02em !important;
-    line-height: 1.1 !important;
-}
-.tss-header span {
-    color: #FFB3BA;
-    font-size: 1rem;
-    font-weight: 600;
-}
 </style>
-<div class="tss-header">
-  <h1>広島県 市町情報</h1>
-  <span>すきゅん TSS ✕ AI &nbsp;|&nbsp; 広島県23市町の最新情報を自動収集・分析</span>
+<div style="background-color:#E60012; padding:22px 32px 18px 32px; margin-bottom:24px; position:sticky; top:0; z-index:999;">
+  <div style="color:#FFFFFF; font-size:3rem; font-weight:900; margin:0 0 10px 0; letter-spacing:0.02em; line-height:1.1;">広島県 市町情報</div>
+  <div style="color:#FFB3BA; font-size:1rem; font-weight:600;">すきゅん TSS ✕ AI &nbsp;|&nbsp; 広島県23市町の最新情報を自動収集・分析</div>
 </div>
 """, unsafe_allow_html=True)
 
