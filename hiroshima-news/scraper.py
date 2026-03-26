@@ -693,10 +693,12 @@ def scrape_jinseki() -> list[dict]:
         seen.add(title)
         parent_text = a.parent.get_text() if a.parent else ""
         date_m = re.search(r"\d{4}年\d{1,2}月\d{1,2}日", parent_text)
+        if not date_m:
+            continue
         articles.append({
             "city": "神石高原町", "title": title,
             "url": urljoin(BASE_URL_JINSEKI, href),
-            "published_at": date_m.group(0) if date_m else "",
+            "published_at": date_m.group(0),
             "fetched_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
         })
         if len(articles) >= 10:

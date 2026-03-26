@@ -4,7 +4,7 @@ import re
 from datetime import date, timedelta
 from scraper import fetch_all
 from analyzer import analyze_articles
-from database import init_db, get_known_urls, save_articles, load_all_articles, get_stats, get_uncategorized_articles, update_article_analysis
+from database import init_db, get_known_urls, save_articles, load_all_articles, get_stats, get_uncategorized_articles, update_article_analysis, delete_articles_without_date
 
 st.set_page_config(
     page_title="広島県 市町情報ダッシュボード",
@@ -14,6 +14,7 @@ st.set_page_config(
 )
 
 init_db()
+delete_articles_without_date("神石高原町")
 
 st.markdown("""
 <style>

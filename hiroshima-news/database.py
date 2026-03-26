@@ -76,6 +76,16 @@ def update_article_analysis(url: str, summary: str, category: str, score: int):
             )
 
 
+def delete_articles_without_date(city: str):
+    """指定した市町の日付なし記事を削除"""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM articles WHERE city=%s AND (published_at IS NULL OR published_at='')",
+                (city,)
+            )
+
+
 def get_stats() -> dict:
     with get_conn() as conn:
         with conn.cursor() as cur:
