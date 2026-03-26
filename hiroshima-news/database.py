@@ -46,13 +46,14 @@ def save_articles(articles: list):
             """, articles)
 
 
-def load_all_articles() -> list:
+def load_all_articles(limit: int = 300) -> list:
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute("""
                 SELECT * FROM articles
-                ORDER BY published_at DESC, fetched_at DESC
-            """)
+                ORDER BY fetched_at DESC, published_at DESC
+                LIMIT %s
+            """, (limit,))
             return [dict(row) for row in cur.fetchall()]
 
 
