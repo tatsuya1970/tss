@@ -14,7 +14,42 @@ st.set_page_config(
 
 init_db()
 
-st.title("📰 広島県 市町情報 リアルタイムダッシュボード")
+st.markdown("""
+<style>
+/* ヘッダーバー */
+.tss-header {
+    background-color: #E60012;
+    padding: 16px 24px;
+    margin-bottom: 24px;
+    border-radius: 4px;
+}
+.tss-header h1 {
+    color: #FFFFFF;
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin: 0;
+    letter-spacing: 0.02em;
+}
+.tss-header span {
+    color: #FFB3BA;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+/* カテゴリバッジ */
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: 4px;
+}
+</style>
+<div class="tss-header">
+  <h1>広島県 市町情報 リアルタイムダッシュボード</h1>
+  <span>すきゅん TSS ✕ AI &nbsp;|&nbsp; 広島県23市町の最新情報を自動収集・分析</span>
+</div>
+""", unsafe_allow_html=True)
 
 # サイドバー：フィルター
 st.sidebar.header("フィルター")

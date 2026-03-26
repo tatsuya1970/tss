@@ -1,0 +1,7 @@
+[theme]
+# TSS テレビ新広島 ブランドカラー
+primaryColor = "#E60012"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#FFE8EE"
+textColor = "#1A1A1A"
+font = "sans serif"
