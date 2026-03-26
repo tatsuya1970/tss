@@ -15,7 +15,6 @@ st.set_page_config(
 init_db()
 
 st.title("📰 広島県 市町情報 リアルタイムダッシュボード")
-st.caption("広島市・福山市・呉市・廿日市市・尾道市のプレスリリースをAIで要約・分類します")
 
 # サイドバー：フィルター
 st.sidebar.header("フィルター")
