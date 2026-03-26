@@ -102,8 +102,8 @@ async def get_real_trends_from_x() -> List[EventModel]:
         
         # We need expansions="author_id" and user_fields to get real user profile details.
         # But to keep it simple and within basic quota, we just take standard metrics.
-        # 過去2時間前からのツイートのみを取得するように設定
-        two_hours_ago = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=2)
+        # 過去6時間前からのツイートのみを取得するように設定
+        two_hours_ago = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=6)
 
         x_request_params = {
             "query": query,
