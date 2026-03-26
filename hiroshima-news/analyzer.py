@@ -55,27 +55,47 @@ def analyze_articles(articles: list[dict]) -> list[dict]:
     return articles
 
 
-def generate_briefing(articles: list[dict]) -> tuple[str, list[dict]]:
-    """記事リストからAIブリーフィングを生成する。(本文, 参照記事リスト) を返す"""
+def generate_briefing(articles: list[dict]) -> tuple[dict, list[dict]]:
+    """記事リストからAIブリーフィングを生成する。(構造化dict, 参照記事リスト) を返す"""
     if not articles:
-        return "対象記事がありません。", []
+        return {}, []
+
+    import json as _json
 
     # 上位30件に絞る（トークン節約）
     targets = sorted(articles, key=lambda a: -(a.get("score") or 1))[:30]
     lines = "\n".join(
-        [f"- [{a['city']}]【{a.get('category','その他')}】{a['title']}　{a.get('published_at','')}"
-         for a in targets]
+        [f"{i+1}. [{a['city']}]【{a.get('category','その他')}】{a['title']}　{a.get('published_at','')}"
+         for i, a in enumerate(targets)]
     )
 
     prompt = f"""あなたはテレビ局の優秀なリサーチャーです。
-以下は広島県の市町から収集した最新情報の一覧です。
-テレビ局のディレクター・報道デスク向けに、朝のブリーフィングを日本語で作成してください。
+以下は広島県の市町から収集した最新情報の一覧（番号付き）です。
+テレビ局のディレクター・報道デスク向けのブリーフィングを、以下のJSON形式のみで出力してください。
 
-【形式】
-・冒頭に全体の概況を2〜3文でまとめる
-・カテゴリ別に注目情報を箇条書きで整理する
-・最後に「AIが注目する案件」として取材候補を1〜3件挙げ、その理由も添える
-・全体で400字程度にまとめる
+{{
+  "overview": "全体の概況（2〜3文）",
+  "categories": [
+    {{
+      "name": "カテゴリ名",
+      "items": [
+        {{
+          "text": "記事の説明文（日付・句点なし）",
+          "article_index": 記事番号（1始まり）,
+          "date": "YYYY年M月D日"
+        }}
+      ]
+    }}
+  ],
+  "notable": [
+    {{
+      "title": "取材候補のキーワード（10字以内）",
+      "reason": "取材候補として推薦する理由",
+      "article_index": 記事番号
+    }}
+  ],
+  "closing": "締めのテキスト（1文）"
+}}
 
 【記事一覧】
 {lines}
@@ -84,6 +104,8 @@ def generate_briefing(articles: list[dict]) -> tuple[str, list[dict]]:
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
         temperature=0.3,
     )
-    return response.choices[0].message.content.strip(), targets
+    content = response.choices[0].message.content.strip()
+    return _json.loads(content), targets

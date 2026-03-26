@@ -14,6 +14,52 @@ st.set_page_config(
 )
 
 init_db()
+
+
+def render_briefing(data: dict, sources: list):
+    """構造化ブリーフィングデータをMarkdownで表示する"""
+    if not data:
+        return
+    url_map = {i + 1: a.get("url", "") for i, a in enumerate(sources)}
+
+    lines = []
+    if data.get("overview"):
+        lines.append(data["overview"])
+        lines.append("")
+
+    for cat in data.get("categories", []):
+        lines.append(f"【{cat['name']}】")
+        lines.append("")
+        for item in cat.get("items", []):
+            idx = item.get("article_index", 0)
+            url = url_map.get(idx, "")
+            date = item.get("date", "")
+            text = item.get("text", "")
+            if url and date:
+                lines.append(f"- {text}（[{date}]({url})）")
+            elif date:
+                lines.append(f"- {text}（{date}）")
+            else:
+                lines.append(f"- {text}")
+        lines.append("")
+
+    notables = data.get("notable", [])
+    if notables:
+        lines.append("**AIが注目する案件**")
+        lines.append("")
+        for j, n in enumerate(notables, 1):
+            idx = n.get("article_index", 0)
+            url = url_map.get(idx, "")
+            title = n.get("title", "")
+            reason = n.get("reason", "")
+            link = f" [🔗]({url})" if url else ""
+            lines.append(f"{j}. **{title}** - {reason}{link}")
+        lines.append("")
+
+    if data.get("closing"):
+        lines.append(data["closing"])
+
+    st.info("📋 **AIブリーフィング**\n\n" + "\n".join(lines))
 delete_articles_without_date("神石高原町")
 
 st.markdown("""
@@ -89,15 +135,8 @@ if st.button("🔄 新着情報を取得・分析する", type="primary"):
     if analyzed:
         try:
             with st.spinner("AIブリーフィングを生成中..."):
-                briefing, briefing_sources = generate_briefing(analyzed)
-            st.info("📋 **新着情報 AIブリーフィング**\n\n" + briefing)
-            with st.expander("参照記事一覧"):
-                for a in briefing_sources:
-                    label = f"[{a['city']}] {a['title']}"
-                    if a.get("url"):
-                        st.markdown(f"- [{label}]({a['url']})")
-                    else:
-                        st.markdown(f"- {label}")
+                briefing_data, briefing_sources = generate_briefing(analyzed)
+            render_briefing(briefing_data, briefing_sources)
         except Exception as e:
             st.warning(f"ブリーフィング生成エラー: {e}")
 
@@ -145,15 +184,8 @@ if articles:
     if st.session_state.pop("run_briefing", False):
         try:
             with st.spinner("AIブリーフィングを生成中..."):
-                briefing, briefing_sources = generate_briefing(df.to_dict("records"))
-            st.info("📋 **AIブリーフィング**\n\n" + briefing)
-            with st.expander("参照記事一覧"):
-                for a in briefing_sources:
-                    label = f"[{a['city']}] {a['title']}"
-                    if a.get("url"):
-                        st.markdown(f"- [{label}]({a['url']})")
-                    else:
-                        st.markdown(f"- {label}")
+                briefing_data, briefing_sources = generate_briefing(df.to_dict("records"))
+            render_briefing(briefing_data, briefing_sources)
         except Exception as e:
             st.warning(f"ブリーフィング生成エラー: {e}")
 
