@@ -1,0 +1,14 @@
+.env
+.env.*
+.claude/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+venv/
+env/
+*.db
+node_modules/
+dist/
+build/
+.pytest_cache/

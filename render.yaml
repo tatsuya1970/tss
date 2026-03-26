@@ -1,0 +1,26 @@
+services:
+  # ① 広島市町情報ダッシュボード
+  - type: web
+    name: hiroshima-news
+    runtime: python
+    rootDir: hiroshima-news
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+
+  # ② SNSトレンド可視化ツール（バックエンド＋フロントエンド統合）
+  - type: web
+    name: sns-analyze
+    runtime: python
+    rootDir: sns-analyze
+    buildCommand: >
+      pip install -r backend/requirements.txt &&
+      cd frontend && npm install && npm run build
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: TWITTER_BEARER_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
