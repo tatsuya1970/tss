@@ -138,13 +138,24 @@ if articles:
 
     # 統計
     col1, col2 = st.columns(2)
-    col1.metric("表示件数", len(df))
+    col1.metric("総件数", len(df))
     col2.metric("対象市町数", df["city"].nunique())
 
     st.divider()
 
-    # 記事一覧
-    for _, row in df.iterrows():
+    # ページネーション
+    PAGE_SIZE = 50
+    total = len(df)
+    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+
+    if "page" not in st.session_state:
+        st.session_state.page = 1
+    st.session_state.page = min(st.session_state.page, total_pages)
+
+    start = (st.session_state.page - 1) * PAGE_SIZE
+    page_df = df.iloc[start:start + PAGE_SIZE]
+
+    for _, row in page_df.iterrows():
         published = row.get("published_at", "") or ""
         pub_prefix = f"{published} ／ " if published else ""
         url = row.get("url", "")
@@ -153,5 +164,21 @@ if articles:
             st.markdown(f"- [{label}]({url})")
         else:
             st.markdown(f"- {label}")
+
+    st.divider()
+    col_prev, col_info, col_next = st.columns([1, 2, 1])
+    with col_prev:
+        if st.button("◀ 前へ", disabled=st.session_state.page <= 1):
+            st.session_state.page -= 1
+            st.rerun()
+    with col_info:
+        st.markdown(
+            f"<div style='text-align:center; padding-top:6px;'>{st.session_state.page} / {total_pages} ページ（{total}件）</div>",
+            unsafe_allow_html=True,
+        )
+    with col_next:
+        if st.button("次へ ▶", disabled=st.session_state.page >= total_pages):
+            st.session_state.page += 1
+            st.rerun()
 else:
     st.info("「新着情報を取得・分析する」ボタンを押してください")
