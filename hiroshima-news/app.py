@@ -3,7 +3,7 @@ import pandas as pd
 import re
 from datetime import date, timedelta
 from scraper import fetch_all
-from analyzer import analyze_articles
+from analyzer import analyze_articles, generate_briefing
 from database import init_db, get_known_urls, save_articles, load_all_articles, get_stats, get_uncategorized_articles, update_article_analysis, delete_articles_without_date
 
 st.set_page_config(
@@ -48,6 +48,11 @@ selected_cities = st.sidebar.multiselect(
 )
 date_from = st.sidebar.date_input("開始日", value=date.today() - timedelta(days=30))
 date_to = st.sidebar.date_input("終了日", value=date.today())
+# フィルター条件のブリーフィング
+st.sidebar.divider()
+if st.sidebar.button("📋 選択中の情報をブリーフィング", use_container_width=True):
+    st.session_state["run_briefing"] = True
+
 # DB統計
 stats = get_stats()
 if stats["last_fetch"]:
@@ -80,6 +85,15 @@ if st.button("🔄 新着情報を取得・分析する", type="primary"):
         except Exception as e:
             st.error(f"分析エラー: {e}")
 
+    # 新着記事のブリーフィングを自動生成
+    if analyzed:
+        try:
+            with st.spinner("AIブリーフィングを生成中..."):
+                briefing = generate_briefing(analyzed)
+            st.info("📋 **新着情報 AIブリーフィング**\n\n" + briefing)
+        except Exception as e:
+            st.warning(f"ブリーフィング生成エラー: {e}")
+
     # 既存のカテゴリ未設定記事を再分析
     uncategorized = get_uncategorized_articles()
     if uncategorized:
@@ -94,6 +108,7 @@ if st.button("🔄 新着情報を取得・分析する", type="primary"):
 
 # DB から全記事を読み込んで表示
 articles = load_all_articles()
+
 
 if articles:
     df = pd.DataFrame(articles)
@@ -118,6 +133,15 @@ if articles:
         return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else (0, 0, 0)
     df["_date_key"] = df["published_at"].apply(parse_date)
     df = df.sort_values("_date_key", ascending=False).drop(columns=["_date_key"])
+
+    # フィルター条件でブリーフィング生成
+    if st.session_state.pop("run_briefing", False):
+        try:
+            with st.spinner("AIブリーフィングを生成中..."):
+                briefing = generate_briefing(df.to_dict("records"))
+            st.info("📋 **AIブリーフィング**\n\n" + briefing)
+        except Exception as e:
+            st.warning(f"ブリーフィング生成エラー: {e}")
 
     # 統計
     col1, col2 = st.columns(2)

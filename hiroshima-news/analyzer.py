@@ -53,3 +53,37 @@ def analyze_articles(articles: list[dict]) -> list[dict]:
             article["category"] = "その他"
             article["score"] = 1
     return articles
+
+
+def generate_briefing(articles: list[dict]) -> str:
+    """記事リストからAIブリーフィングを生成する"""
+    if not articles:
+        return "対象記事がありません。"
+
+    # 上位30件に絞る（トークン節約）
+    targets = sorted(articles, key=lambda a: -(a.get("score") or 1))[:30]
+    lines = "\n".join(
+        [f"- [{a['city']}]【{a.get('category','その他')}】{a['title']}　{a.get('published_at','')}"
+         for a in targets]
+    )
+
+    prompt = f"""あなたはテレビ局の優秀なリサーチャーです。
+以下は広島県の市町から収集した最新情報の一覧です。
+テレビ局のディレクター・報道デスク向けに、朝のブリーフィングを日本語で作成してください。
+
+【形式】
+・冒頭に全体の概況を2〜3文でまとめる
+・カテゴリ別に注目情報を箇条書きで整理する
+・最後に「AIが注目する案件」として取材候補を1〜3件挙げ、その理由も添える
+・全体で400字程度にまとめる
+
+【記事一覧】
+{lines}
+"""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+    )
+    return response.choices[0].message.content.strip()
