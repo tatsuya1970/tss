@@ -116,6 +116,7 @@ if st.button("🔄 新着情報を取得・分析する", type="primary"):
     # 新着のみ抽出（DBに未保存のURL）
     new_articles = [a for a in all_articles if a["url"] not in known_urls]
 
+    analyzed = []
     if not new_articles:
         st.info("前回取得以降、新しい記事はありませんでした。")
     else:
