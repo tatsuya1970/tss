@@ -34,12 +34,12 @@ button[data-testid="stSidebarOpenButton"] { display: none; }
     z-index: 999;
 }
 .tss-header h1 {
-    color: #FFFFFF;
-    font-size: 3rem;
-    font-weight: 900;
-    margin: 0 0 10px 0;
-    letter-spacing: 0.02em;
-    line-height: 1.1;
+    color: #FFFFFF !important;
+    font-size: 3rem !important;
+    font-weight: 900 !important;
+    margin: 0 0 10px 0 !important;
+    letter-spacing: 0.02em !important;
+    line-height: 1.1 !important;
 }
 .tss-header span {
     color: #FFB3BA;
