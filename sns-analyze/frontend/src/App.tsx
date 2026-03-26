@@ -30,9 +30,11 @@ function App() {
     }
   };
 
-  // Only fetch once on initial load. Users can manually refresh later.
+  // 初回ロード + 1時間ごとに自動更新
   useEffect(() => {
     fetchEvents();
+    const timer = setInterval(fetchEvents, 60 * 60 * 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleEventSelect = (id: string) => {
