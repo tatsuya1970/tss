@@ -24,19 +24,22 @@ header[data-testid="stHeader"] { display: none; }
 button[data-testid="stSidebarCollapseButton"] { display: none; }
 button[data-testid="stSidebarOpenButton"] { display: none; }
 
-/* ヘッダーバー */
+/* ヘッダーバー（固定） */
 .tss-header {
     background-color: #E60012;
-    padding: 20px 28px;
+    padding: 22px 32px 18px 32px;
     margin-bottom: 24px;
-    border-radius: 4px;
+    position: sticky;
+    top: 0;
+    z-index: 999;
 }
 .tss-header h1 {
     color: #FFFFFF;
-    font-size: 2.4rem;
+    font-size: 3rem;
     font-weight: 900;
-    margin: 0 0 8px 0;
+    margin: 0 0 10px 0;
     letter-spacing: 0.02em;
+    line-height: 1.1;
 }
 .tss-header span {
     color: #FFB3BA;
@@ -45,7 +48,7 @@ button[data-testid="stSidebarOpenButton"] { display: none; }
 }
 </style>
 <div class="tss-header">
-  <h1>広島県 市町情報 リアルタイムダッシュボード</h1>
+  <h1>広島県 市町情報</h1>
   <span>すきゅん TSS ✕ AI &nbsp;|&nbsp; 広島県23市町の最新情報を自動収集・分析</span>
 </div>
 """, unsafe_allow_html=True)
