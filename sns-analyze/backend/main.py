@@ -82,7 +82,7 @@ LOCAL_MAP = {
 }
 
 async def get_real_trends_from_x() -> List[EventModel]:
-    twitter_bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
+    twitter_bearer_token = (os.getenv("TWITTER_BEARER_TOKEN") or "").strip()
     if not twitter_bearer_token or "your_bearer_token_here" in twitter_bearer_token:
         print("X API Key is missing or invalid. Returning empty list.")
         return []
