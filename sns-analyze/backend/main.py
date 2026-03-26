@@ -91,14 +91,13 @@ async def get_real_trends_from_x() -> List[EventModel]:
     try:
         client = tweepy.Client(bearer_token=twitter_bearer_token)
         
-        event_keywords = "(祭り OR イベント OR ライブ OR 混雑 OR 行列 OR 渋滞 OR 事故 OR 遅延 OR 満員 OR オープン OR 最高 OR やばい)"
-        
         # 北海道の「北広島」、東京の「府中」などをAPIの段階で除外するマイナス検索
         exclude_keywords = "-北海道 -北広島駅 -北広島市 -千歳線 -エスコン -東京 -府中競馬場 -東京競馬場 -京王線 -山手線 -府中市美術館 -府中市美 -首都高 -大阪 -道頓堀 -難波 -なんば -ミナミ"
-        
+
+        # イベント系キーワード制限を外し、地名だけで広く収集（重要度はAIフィルタで判定）
         places_list = list(LOCAL_MAP.keys())
         places_str = "(" + " OR ".join(places_list) + ")"
-        query = f"{places_str} {event_keywords} {exclude_keywords} -is:retweet -is:reply"
+        query = f"{places_str} {exclude_keywords} -is:retweet -is:reply"
         
         # We need expansions="author_id" and user_fields to get real user profile details.
         # But to keep it simple and within basic quota, we just take standard metrics.
@@ -146,19 +145,24 @@ async def get_real_trends_from_x() -> List[EventModel]:
                 input_data = {str(i): t.text for i, t in enumerate(filtered_tweets)}
                 
                 prompt = f"""
-以下のJSONデータのツイート本文を深く読み込み、それぞれが「本当に広島県の出来事や場所に関する話題」かどうかを文脈から厳密に判定して True / False で返してください。
+以下のJSONデータのツイート本文を深く読み込み、それぞれが「テレビ局のリサーチャーにとって価値ある広島県の情報」かどうかを判定して True / False で返してください。
 
-【重要な除外ルール（必ず False にするもの）】
-1. 他県の同名地名：「府中市美（東京都府中市）」「大國魂神社（東京）」「北広島（北海道）」のような、広島県以外の話題。
-2. 【重要】他県を示唆するワード：投稿内に「大阪」「道頓堀」「難波」「東京」「新宿」など、明らかに広島県外の都道府県名や有名地名が一緒に含まれている場合は、偶然の一致または別県の同名地名（例：大阪の坂町など）であるため絶対に False にすること。
-3. 単語の部分一致による誤認：「スマ本通販」の中の『本通』、「〜の呉服屋」の中の『呉』、「事故」が含まれただけの無関係な話題など、そもそも地名として使われていない文字列の偶然の一致は絶対に False にすること。
-4. 具体性のない日常ツイート：「広島に着いた」「宮島に行きたいな」といった、その場所で「何かが起きている」わけではない単なる日記や願望。
+【必ず False にするもの】
+1. 他県の同名地名：「北広島（北海道）」「府中（東京）」など広島県以外の話題
+2. 他県ワードを含む：「大阪」「東京」「難波」「新宿」など県外地名が含まれるもの
+3. 地名の誤検知：「呉服屋」の『呉』、「本通販」の『本通』など地名として使われていないもの
+4. 単なる日常・感想：「広島に行きたい」「宮島きれい」「広島出身です」など、現地で何かが起きているわけではないもの
+5. 宣伝・スパム：商品告知、アフィリエイト、無関係な広告
 
-【許可ルール（True にするもの）】
-「広島駅の新店舗が大行列」「本通のアーケードでパレードをしている」「マツダスタジアムが満員」のように、明確に「広島県内の特定の場所で起きている出来事」であることが読み取れる話題のみ True を返してください。
+【True にするもの（以下のいずれかに該当）】
+- イベント・お祭り・ライブ・スポーツの開催・混雑・盛り上がり情報
+- 新店舗オープン・閉店・リニューアル情報
+- 交通渋滞・事故・遅延など地域の異変
+- 災害・気象・緊急情報
+- 地域の話題になっている出来事・炎上・論争
+- 観光地・グルメスポットのリアルな混雑・評判
 
-出力は以下のJSON書式に従って、判定結果だけを出力してください。
-例: {{"0": true, "1": false, "2": true}}
+出力はJSON書式のみ。例: {{"0": true, "1": false, "2": true}}
 
 入力データ:
 {json.dumps(input_data, ensure_ascii=False)}
