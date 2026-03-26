@@ -56,9 +56,6 @@ def render_briefing(data: dict, sources: list):
             lines.append(f"{j}. **{title}** - {reason}{link}")
         lines.append("")
 
-    if data.get("closing"):
-        lines.append(data["closing"])
-
     st.info("📋 **AIブリーフィング**\n\n" + "\n".join(lines))
 delete_articles_without_date("神石高原町")
 

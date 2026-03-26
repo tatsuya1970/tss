@@ -90,11 +90,10 @@ def generate_briefing(articles: list[dict]) -> tuple[dict, list[dict]]:
   "notable": [
     {{
       "title": "取材候補のキーワード（10字以内）",
-      "reason": "取材候補として推薦する理由",
+      "reason": "取材候補として推薦する理由を3文程度で詳しく記述。①なぜ今注目すべきか、②視聴者・地域へのインパクト、③どんな取材アングルが考えられるかを含めること",
       "article_index": 記事番号
     }}
-  ],
-  "closing": "締めのテキスト（1文）"
+  ]
 }}
 
 【記事一覧】
