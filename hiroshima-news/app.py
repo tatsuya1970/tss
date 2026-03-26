@@ -16,33 +16,27 @@ init_db()
 
 st.markdown("""
 <style>
+/* Streamlitデフォルトのヘッダーを非表示 */
+header[data-testid="stHeader"] { display: none; }
+
 /* ヘッダーバー */
 .tss-header {
     background-color: #E60012;
-    padding: 16px 24px;
+    padding: 20px 28px;
     margin-bottom: 24px;
     border-radius: 4px;
 }
 .tss-header h1 {
     color: #FFFFFF;
-    font-size: 1.8rem;
+    font-size: 2.4rem;
     font-weight: 900;
-    margin: 0;
+    margin: 0 0 8px 0;
     letter-spacing: 0.02em;
 }
 .tss-header span {
     color: #FFB3BA;
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-/* カテゴリバッジ */
-.badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    margin-right: 4px;
+    font-size: 1rem;
+    font-weight: 600;
 }
 </style>
 <div class="tss-header">
