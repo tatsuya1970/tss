@@ -20,6 +20,9 @@ st.markdown("""
 <style>
 /* Streamlitデフォルトのヘッダーを非表示 */
 header[data-testid="stHeader"] { display: none; }
+/* サイドバーの開閉ボタンを非表示 */
+button[data-testid="stSidebarCollapseButton"] { display: none; }
+button[data-testid="stSidebarOpenButton"] { display: none; }
 
 /* ヘッダーバー */
 .tss-header {
