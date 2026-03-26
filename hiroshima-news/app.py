@@ -10,6 +10,7 @@ st.set_page_config(
     page_title="広島県 市町情報ダッシュボード",
     page_icon="📰",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 init_db()
