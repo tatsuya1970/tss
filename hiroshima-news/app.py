@@ -89,8 +89,15 @@ if st.button("🔄 新着情報を取得・分析する", type="primary"):
     if analyzed:
         try:
             with st.spinner("AIブリーフィングを生成中..."):
-                briefing = generate_briefing(analyzed)
+                briefing, briefing_sources = generate_briefing(analyzed)
             st.info("📋 **新着情報 AIブリーフィング**\n\n" + briefing)
+            with st.expander("参照記事一覧"):
+                for a in briefing_sources:
+                    label = f"[{a['city']}] {a['title']}"
+                    if a.get("url"):
+                        st.markdown(f"- [{label}]({a['url']})")
+                    else:
+                        st.markdown(f"- {label}")
         except Exception as e:
             st.warning(f"ブリーフィング生成エラー: {e}")
 
@@ -138,8 +145,15 @@ if articles:
     if st.session_state.pop("run_briefing", False):
         try:
             with st.spinner("AIブリーフィングを生成中..."):
-                briefing = generate_briefing(df.to_dict("records"))
+                briefing, briefing_sources = generate_briefing(df.to_dict("records"))
             st.info("📋 **AIブリーフィング**\n\n" + briefing)
+            with st.expander("参照記事一覧"):
+                for a in briefing_sources:
+                    label = f"[{a['city']}] {a['title']}"
+                    if a.get("url"):
+                        st.markdown(f"- [{label}]({a['url']})")
+                    else:
+                        st.markdown(f"- {label}")
         except Exception as e:
             st.warning(f"ブリーフィング生成エラー: {e}")
 

@@ -55,10 +55,10 @@ def analyze_articles(articles: list[dict]) -> list[dict]:
     return articles
 
 
-def generate_briefing(articles: list[dict]) -> str:
-    """記事リストからAIブリーフィングを生成する"""
+def generate_briefing(articles: list[dict]) -> tuple[str, list[dict]]:
+    """記事リストからAIブリーフィングを生成する。(本文, 参照記事リスト) を返す"""
     if not articles:
-        return "対象記事がありません。"
+        return "対象記事がありません。", []
 
     # 上位30件に絞る（トークン節約）
     targets = sorted(articles, key=lambda a: -(a.get("score") or 1))[:30]
@@ -86,4 +86,4 @@ def generate_briefing(articles: list[dict]) -> str:
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
     )
-    return response.choices[0].message.content.strip()
+    return response.choices[0].message.content.strip(), targets
