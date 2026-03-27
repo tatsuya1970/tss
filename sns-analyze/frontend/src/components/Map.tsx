@@ -25,6 +25,9 @@ const createCustomIcon = (heatScore: number, category: string) => {
 type Props = {
   events: TrendEvent[];
   selectedEventId: string | null;
+  initialLat?: number;
+  initialLng?: number;
+  initialZoom?: number;
 }
 
 const MapController = ({ events, selectedEventId }: { events: TrendEvent[], selectedEventId: string | null }) => {
@@ -42,12 +45,12 @@ const MapController = ({ events, selectedEventId }: { events: TrendEvent[], sele
   return null;
 };
 
-export const Map = ({ events, selectedEventId }: Props) => {
+export const Map = ({ events, selectedEventId, initialLat, initialLng, initialZoom }: Props) => {
   return (
     <div className="map-container">
-      <MapContainer 
-        center={[34.3853, 132.4553]} // Hiroshima City Center
-        zoom={11} 
+      <MapContainer
+        center={[initialLat ?? 34.3853, initialLng ?? 132.4553]}
+        zoom={initialZoom ?? 11}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >

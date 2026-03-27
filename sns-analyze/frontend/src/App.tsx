@@ -8,6 +8,11 @@ function App() {
   const [events, setEvents] = useState<TrendEvent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
+  const params = new URLSearchParams(window.location.search);
+  const initialLat = params.get('lat') ? parseFloat(params.get('lat')!) : undefined;
+  const initialLng = params.get('lng') ? parseFloat(params.get('lng')!) : undefined;
+  const initialZoom = params.get('zoom') ? parseInt(params.get('zoom')!) : undefined;
+
   // Fetch data from backend API
   const fetchEvents = async () => {
     setLoading(true);
@@ -50,7 +55,7 @@ function App() {
         onRefresh={fetchEvents}
         isLoading={loading}
       />
-      <Map events={events} selectedEventId={selectedEventId} />
+      <Map events={events} selectedEventId={selectedEventId} initialLat={initialLat} initialLng={initialLng} initialZoom={initialZoom} />
       
       {loading && (
         <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.8)', padding: '10px 20px', borderRadius: '20px', color: '#fff', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '10px' }}>

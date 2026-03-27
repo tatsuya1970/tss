@@ -91,11 +91,11 @@ selected_cities = st.sidebar.multiselect(
         "安芸太田町", "北広島町", "大崎上島町", "世羅町", "神石高原町",
     ],
 )
-date_from = st.sidebar.date_input("開始日", value=date.today() - timedelta(days=30))
+date_from = st.sidebar.date_input("開始日", value=date.today())
 date_to = st.sidebar.date_input("終了日", value=date.today())
 # フィルター条件のブリーフィング
 st.sidebar.divider()
-if st.sidebar.button("📋 選択中の情報をブリーフィング", use_container_width=True):
+if st.sidebar.button("📋 選択中の情報をブリーフィング", use_container_width=True, type="primary"):
     st.session_state["run_briefing"] = True
 
 # DB統計
@@ -106,7 +106,7 @@ if stats["last_fetch"]:
     st.sidebar.caption(f"🕐 前回取得: {stats['last_fetch']}")
 
 # 2カラム：左（メイン）・右（SNSトレンド）
-col_main, col_sns = st.columns([3, 2])
+col_main, col_sns = st.columns([3, 4])
 
 # SNSトレンド（常時表示）
 with col_sns:
@@ -124,7 +124,7 @@ with col_sns:
         st.caption("データ取得中...")
 
     st.markdown("[SNSトレンドマップを開く →](https://sns-analyze.onrender.com/)")
-    components.iframe("https://sns-analyze.onrender.com/", height=400, scrolling=True)
+    components.iframe("https://sns-analyze.onrender.com/?lat=34.6&lng=132.7&zoom=9", height=400, scrolling=True)
 
 with col_main:
     btn_clicked = st.button("🔄 新着情報を取得・分析する", type="primary")

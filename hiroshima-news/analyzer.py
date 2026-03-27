@@ -80,7 +80,7 @@ def generate_briefing(articles: list[dict]) -> tuple[dict, list[dict]]:
       "name": "カテゴリ名",
       "items": [
         {{
-          "text": "記事の説明文（日付・句点なし）",
+          "text": "【自治体名】記事の説明文（日付・句点なし）",
           "article_index": 記事番号（1始まり）,
           "date": "YYYY年M月D日"
         }}
