@@ -7,4 +7,3 @@ httpx
 pydantic==2.12.5
 python-multipart==0.0.22
 requests==2.32.5
-starlette==1.0.0
