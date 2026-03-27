@@ -105,67 +105,81 @@ if stats["last_fetch"]:
     st.sidebar.caption(f"📦 DB保存件数: {stats['total']}件")
     st.sidebar.caption(f"🕐 前回取得: {stats['last_fetch']}")
 
-# データ取得ボタン
-if st.button("🔄 新着情報を取得・分析する", type="primary"):
-    known_urls = get_known_urls()
+# 上部2カラム：左（取得ボタン＋ブリーフィング）・右（SNSトレンド）
+col_left, col_sns = st.columns([3, 2])
 
-    with st.spinner("市町村サイトからデータを収集中..."):
-        all_articles = fetch_all()
+with col_left:
+    if st.button("🔄 新着情報を取得・分析する", type="primary"):
+        known_urls = get_known_urls()
 
-    # 新着のみ抽出（DBに未保存のURL）
-    new_articles = [a for a in all_articles if a["url"] not in known_urls]
+        with st.spinner("市町村サイトからデータを収集中..."):
+            all_articles = fetch_all()
 
-    analyzed = []
-    if not new_articles:
-        st.info("前回取得以降、新しい記事はありませんでした。")
+        new_articles = [a for a in all_articles if a["url"] not in known_urls]
+
+        analyzed = []
+        if not new_articles:
+            st.info("前回取得以降、新しい記事はありませんでした。")
+        else:
+            try:
+                with st.spinner("AIで分析中..."):
+                    analyzed = analyze_articles(new_articles)
+                for a in analyzed:
+                    a.setdefault("summary", "")
+                    a.setdefault("category", "その他")
+                    a.setdefault("score", 1)
+                save_articles(analyzed)
+                st.success(f"✅ {len(analyzed)}件の新着記事を取得・保存しました")
+            except Exception as e:
+                st.error(f"分析エラー: {e}")
+
+        if analyzed:
+            try:
+                with st.spinner("AIブリーフィングを生成中..."):
+                    briefing_data, briefing_sources = generate_briefing(analyzed)
+                render_briefing(briefing_data, briefing_sources)
+            except Exception as e:
+                st.warning(f"ブリーフィング生成エラー: {e}")
+
+        uncategorized = get_uncategorized_articles()
+        if uncategorized:
+            try:
+                with st.spinner(f"既存の未分類記事 {len(uncategorized)}件 を分析中..."):
+                    analyzed_existing = analyze_articles(uncategorized)
+                for a in analyzed_existing:
+                    update_article_analysis(a["url"], a.get("summary", ""), a.get("category", "その他"), a.get("score", 1))
+                st.success(f"✅ 既存記事 {len(analyzed_existing)}件 のカテゴリを更新しました")
+            except Exception as e:
+                st.error(f"既存記事の分析エラー: {e}")
+
+with col_sns:
+    st.markdown("### 📱 SNSトレンド")
+    try:
+        sns_resp = requests.get("https://sns-analyze.onrender.com/api/events", timeout=10)
+        sns_events = sns_resp.json() if sns_resp.status_code == 200 else []
+    except Exception:
+        sns_events = []
+
+    if sns_events:
+        for event in sns_events[:8]:
+            st.markdown(f"・{event['name']}")
     else:
-        try:
-            with st.spinner("AIで分析中..."):
-                analyzed = analyze_articles(new_articles)
-            for a in analyzed:
-                a.setdefault("summary", "")
-                a.setdefault("category", "その他")
-                a.setdefault("score", 1)
-            save_articles(analyzed)
-            st.success(f"✅ {len(analyzed)}件の新着記事を取得・保存しました")
-        except Exception as e:
-            st.error(f"分析エラー: {e}")
+        st.caption("データ取得中...")
 
-    # 新着記事のブリーフィングを自動生成
-    if analyzed:
-        try:
-            with st.spinner("AIブリーフィングを生成中..."):
-                briefing_data, briefing_sources = generate_briefing(analyzed)
-            render_briefing(briefing_data, briefing_sources)
-        except Exception as e:
-            st.warning(f"ブリーフィング生成エラー: {e}")
-
-    # 既存のカテゴリ未設定記事を再分析
-    uncategorized = get_uncategorized_articles()
-    if uncategorized:
-        try:
-            with st.spinner(f"既存の未分類記事 {len(uncategorized)}件 を分析中..."):
-                analyzed_existing = analyze_articles(uncategorized)
-            for a in analyzed_existing:
-                update_article_analysis(a["url"], a.get("summary", ""), a.get("category", "その他"), a.get("score", 1))
-            st.success(f"✅ 既存記事 {len(analyzed_existing)}件 のカテゴリを更新しました")
-        except Exception as e:
-            st.error(f"既存記事の分析エラー: {e}")
+    st.markdown("[SNSトレンドマップを開く →](https://sns-analyze.onrender.com/)")
+    components.iframe("https://sns-analyze.onrender.com/", height=400, scrolling=True)
 
 # DB から全記事を読み込んで表示
 articles = load_all_articles()
 
-
 if articles:
     df = pd.DataFrame(articles)
 
-    # フィルター適用（未選択時はすべて表示）
     if selected_categories:
         df = df[df["category"].isin(selected_categories)]
     if selected_cities:
         df = df[df["city"].isin(selected_cities)]
 
-    # 日付フィルター（published_atがある記事のみ対象）
     def to_date(s):
         m = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", str(s))
         return date(int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else None
@@ -173,14 +187,12 @@ if articles:
     df = df[df["_date"].isna() | ((df["_date"] >= date_from) & (df["_date"] <= date_to))]
     df = df.drop(columns=["_date"])
 
-    # 日付順ソート（新しい順）
     def parse_date(s):
         m = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", str(s))
         return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else (0, 0, 0)
     df["_date_key"] = df["published_at"].apply(parse_date)
     df = df.sort_values("_date_key", ascending=False).drop(columns=["_date_key"])
 
-    # フィルター条件でブリーフィング生成
     if st.session_state.pop("run_briefing", False):
         try:
             with st.spinner("AIブリーフィングを生成中..."):
@@ -189,71 +201,47 @@ if articles:
         except Exception as e:
             st.warning(f"ブリーフィング生成エラー: {e}")
 
-    col_news, col_sns = st.columns([3, 2])
+    c1, c2 = st.columns(2)
+    c1.metric("総件数", len(df))
+    c2.metric("対象市町数", df["city"].nunique())
 
-    with col_news:
-        # 統計
-        c1, c2 = st.columns(2)
-        c1.metric("総件数", len(df))
-        c2.metric("対象市町数", df["city"].nunique())
+    st.divider()
 
-        st.divider()
+    PAGE_SIZE = 50
+    total = len(df)
+    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
 
-        # ページネーション
-        PAGE_SIZE = 50
-        total = len(df)
-        total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    if "page" not in st.session_state:
+        st.session_state.page = 1
+    st.session_state.page = min(st.session_state.page, total_pages)
 
-        if "page" not in st.session_state:
-            st.session_state.page = 1
-        st.session_state.page = min(st.session_state.page, total_pages)
+    start = (st.session_state.page - 1) * PAGE_SIZE
+    page_df = df.iloc[start:start + PAGE_SIZE]
 
-        start = (st.session_state.page - 1) * PAGE_SIZE
-        page_df = df.iloc[start:start + PAGE_SIZE]
-
-        for _, row in page_df.iterrows():
-            published = row.get("published_at", "") or ""
-            pub_prefix = f"{published} ／ " if published else ""
-            url = row.get("url", "")
-            label = f"{pub_prefix}[{row['city']}] {row['title']}"
-            if url:
-                st.markdown(f"- [{label}]({url})")
-            else:
-                st.markdown(f"- {label}")
-
-        st.divider()
-        col_prev, col_info, col_next = st.columns([1, 2, 1])
-        with col_prev:
-            if st.button("◀ 前へ", disabled=st.session_state.page <= 1):
-                st.session_state.page -= 1
-                st.rerun()
-        with col_info:
-            st.markdown(
-                f"<div style='text-align:center; padding-top:6px;'>{st.session_state.page} / {total_pages} ページ（{total}件）</div>",
-                unsafe_allow_html=True,
-            )
-        with col_next:
-            if st.button("次へ ▶", disabled=st.session_state.page >= total_pages):
-                st.session_state.page += 1
-                st.rerun()
-
-    with col_sns:
-        st.markdown("### 📱 SNSトレンド")
-        try:
-            sns_resp = requests.get("https://sns-analyze.onrender.com/api/events", timeout=10)
-            sns_events = sns_resp.json() if sns_resp.status_code == 200 else []
-        except Exception:
-            sns_events = []
-
-        if sns_events:
-            for event in sns_events[:8]:
-                st.markdown(f"・{event['name']}")
+    for _, row in page_df.iterrows():
+        published = row.get("published_at", "") or ""
+        pub_prefix = f"{published} ／ " if published else ""
+        url = row.get("url", "")
+        label = f"{pub_prefix}[{row['city']}] {row['title']}"
+        if url:
+            st.markdown(f"- [{label}]({url})")
         else:
-            st.caption("データ取得中...")
+            st.markdown(f"- {label}")
 
-        st.markdown("[SNSトレンドマップを開く →](https://sns-analyze.onrender.com/)")
-        st.divider()
-        components.iframe("https://sns-analyze.onrender.com/", height=500, scrolling=True)
-
+    st.divider()
+    col_prev, col_info, col_next = st.columns([1, 2, 1])
+    with col_prev:
+        if st.button("◀ 前へ", disabled=st.session_state.page <= 1):
+            st.session_state.page -= 1
+            st.rerun()
+    with col_info:
+        st.markdown(
+            f"<div style='text-align:center; padding-top:6px;'>{st.session_state.page} / {total_pages} ページ（{total}件）</div>",
+            unsafe_allow_html=True,
+        )
+    with col_next:
+        if st.button("次へ ▶", disabled=st.session_state.page >= total_pages):
+            st.session_state.page += 1
+            st.rerun()
 else:
     st.info("「新着情報を取得・分析する」ボタンを押してください")
