@@ -8,10 +8,19 @@ import os
 from dotenv import load_dotenv
 import re
 import asyncio
+import json
+from contextlib import asynccontextmanager
 
 load_dotenv()
 
-app = FastAPI(title="GeoTrend Analyzer API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_cache_from_file()
+    task = asyncio.create_task(schedule_loop())
+    yield
+    task.cancel()
+
+app = FastAPI(title="GeoTrend Analyzer API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -561,11 +570,6 @@ async def schedule_loop():
         print(f"次の更新: {next_update.strftime('%Y/%m/%d %H:%M')} ({int(wait_seconds/60)}分後)")
         await asyncio.sleep(wait_seconds)
         await refresh_cache()
-
-@app.on_event("startup")
-async def startup_event():
-    load_cache_from_file()
-    asyncio.create_task(schedule_loop())
 
 @app.get("/api/events", response_model=EventsResponse)
 async def fetch_events():
