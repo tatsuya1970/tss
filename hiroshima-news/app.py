@@ -83,9 +83,11 @@ st.markdown("""
 <style>
 /* Streamlitデフォルトのヘッダーを非表示 */
 header[data-testid="stHeader"] { display: none; }
-/* サイドバーの開閉ボタンを非表示 */
+/* サイドバーの開閉・閉じるボタンを非表示 */
 button[data-testid="stSidebarCollapseButton"] { display: none; }
 button[data-testid="stSidebarOpenButton"] { display: none; }
+section[data-testid="stSidebar"] button[kind="header"] { display: none; }
+[data-testid="stSidebarNav"] { display: none; }
 </style>
 <div style="background-color:#E60012; padding:22px 32px 18px 32px; margin-bottom:24px; position:sticky; top:0; z-index:999;">
   <div style="color:#FFFFFF; font-size:3rem; font-weight:900; margin:0 0 10px 0; letter-spacing:0.02em; line-height:1.1;">広島県 市町情報</div>
