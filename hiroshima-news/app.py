@@ -105,11 +105,8 @@ if stats["last_fetch"]:
     st.sidebar.caption(f"📦 DB保存件数: {stats['total']}件")
     st.sidebar.caption(f"🕐 前回取得: {stats['last_fetch']}")
 
-# ボタン（全幅）
-btn_clicked = st.button("🔄 新着情報を取得・分析する", type="primary")
-
-# 2カラム：左（ブリーフィング）・右（SNSトレンド）
-col_briefing, col_sns = st.columns([3, 2])
+# 2カラム：左（メイン）・右（SNSトレンド）
+col_main, col_sns = st.columns([3, 2])
 
 # SNSトレンド（常時表示）
 with col_sns:
@@ -129,125 +126,126 @@ with col_sns:
     st.markdown("[SNSトレンドマップを開く →](https://sns-analyze.onrender.com/)")
     components.iframe("https://sns-analyze.onrender.com/", height=400, scrolling=True)
 
-# ボタン処理
-if btn_clicked:
-    known_urls = get_known_urls()
+with col_main:
+    btn_clicked = st.button("🔄 新着情報を取得・分析する", type="primary")
 
-    with st.spinner("市町村サイトからデータを収集中..."):
-        all_articles = fetch_all()
+    # ボタン処理
+    if btn_clicked:
+        known_urls = get_known_urls()
 
-    new_articles = [a for a in all_articles if a["url"] not in known_urls]
+        with st.spinner("市町村サイトからデータを収集中..."):
+            all_articles = fetch_all()
 
-    analyzed = []
-    if not new_articles:
-        st.info("前回取得以降、新しい記事はありませんでした。")
-    else:
-        try:
-            with st.spinner("AIで分析中..."):
-                analyzed = analyze_articles(new_articles)
-            for a in analyzed:
-                a.setdefault("summary", "")
-                a.setdefault("category", "その他")
-                a.setdefault("score", 1)
-            save_articles(analyzed)
-            st.success(f"✅ {len(analyzed)}件の新着記事を取得・保存しました")
-        except Exception as e:
-            st.error(f"分析エラー: {e}")
+        new_articles = [a for a in all_articles if a["url"] not in known_urls]
 
-    if analyzed:
-        try:
-            with st.spinner("AIブリーフィングを生成中..."):
-                briefing_data, briefing_sources = generate_briefing(analyzed)
-            with col_briefing:
-                render_briefing(briefing_data, briefing_sources)
-        except Exception as e:
-            st.warning(f"ブリーフィング生成エラー: {e}")
-
-    uncategorized = get_uncategorized_articles()
-    if uncategorized:
-        try:
-            with st.spinner(f"既存の未分類記事 {len(uncategorized)}件 を分析中..."):
-                analyzed_existing = analyze_articles(uncategorized)
-            for a in analyzed_existing:
-                update_article_analysis(a["url"], a.get("summary", ""), a.get("category", "その他"), a.get("score", 1))
-            st.success(f"✅ 既存記事 {len(analyzed_existing)}件 のカテゴリを更新しました")
-        except Exception as e:
-            st.error(f"既存記事の分析エラー: {e}")
-
-# DB から全記事を読み込んで表示
-articles = load_all_articles()
-
-if articles:
-    df = pd.DataFrame(articles)
-
-    if selected_categories:
-        df = df[df["category"].isin(selected_categories)]
-    if selected_cities:
-        df = df[df["city"].isin(selected_cities)]
-
-    def to_date(s):
-        m = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", str(s))
-        return date(int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else None
-    df["_date"] = df["published_at"].apply(to_date)
-    df = df[df["_date"].isna() | ((df["_date"] >= date_from) & (df["_date"] <= date_to))]
-    df = df.drop(columns=["_date"])
-
-    def parse_date(s):
-        m = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", str(s))
-        return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else (0, 0, 0)
-    df["_date_key"] = df["published_at"].apply(parse_date)
-    df = df.sort_values("_date_key", ascending=False).drop(columns=["_date_key"])
-
-    if st.session_state.pop("run_briefing", False):
-        try:
-            with st.spinner("AIブリーフィングを生成中..."):
-                briefing_data, briefing_sources = generate_briefing(df.to_dict("records"))
-            with col_briefing:
-                render_briefing(briefing_data, briefing_sources)
-        except Exception as e:
-            st.warning(f"ブリーフィング生成エラー: {e}")
-
-    c1, c2 = st.columns(2)
-    c1.metric("総件数", len(df))
-    c2.metric("対象市町数", df["city"].nunique())
-
-    st.divider()
-
-    PAGE_SIZE = 50
-    total = len(df)
-    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
-
-    if "page" not in st.session_state:
-        st.session_state.page = 1
-    st.session_state.page = min(st.session_state.page, total_pages)
-
-    start = (st.session_state.page - 1) * PAGE_SIZE
-    page_df = df.iloc[start:start + PAGE_SIZE]
-
-    for _, row in page_df.iterrows():
-        published = row.get("published_at", "") or ""
-        pub_prefix = f"{published} ／ " if published else ""
-        url = row.get("url", "")
-        label = f"{pub_prefix}[{row['city']}] {row['title']}"
-        if url:
-            st.markdown(f"- [{label}]({url})")
+        analyzed = []
+        if not new_articles:
+            st.info("前回取得以降、新しい記事はありませんでした。")
         else:
-            st.markdown(f"- {label}")
+            try:
+                with st.spinner("AIで分析中..."):
+                    analyzed = analyze_articles(new_articles)
+                for a in analyzed:
+                    a.setdefault("summary", "")
+                    a.setdefault("category", "その他")
+                    a.setdefault("score", 1)
+                save_articles(analyzed)
+                st.success(f"✅ {len(analyzed)}件の新着記事を取得・保存しました")
+            except Exception as e:
+                st.error(f"分析エラー: {e}")
 
-    st.divider()
-    col_prev, col_info, col_next = st.columns([1, 2, 1])
-    with col_prev:
-        if st.button("◀ 前へ", disabled=st.session_state.page <= 1):
-            st.session_state.page -= 1
-            st.rerun()
-    with col_info:
-        st.markdown(
-            f"<div style='text-align:center; padding-top:6px;'>{st.session_state.page} / {total_pages} ページ（{total}件）</div>",
-            unsafe_allow_html=True,
-        )
-    with col_next:
-        if st.button("次へ ▶", disabled=st.session_state.page >= total_pages):
-            st.session_state.page += 1
-            st.rerun()
-else:
-    st.info("「新着情報を取得・分析する」ボタンを押してください")
+        if analyzed:
+            try:
+                with st.spinner("AIブリーフィングを生成中..."):
+                    briefing_data, briefing_sources = generate_briefing(analyzed)
+                render_briefing(briefing_data, briefing_sources)
+            except Exception as e:
+                st.warning(f"ブリーフィング生成エラー: {e}")
+
+        uncategorized = get_uncategorized_articles()
+        if uncategorized:
+            try:
+                with st.spinner(f"既存の未分類記事 {len(uncategorized)}件 を分析中..."):
+                    analyzed_existing = analyze_articles(uncategorized)
+                for a in analyzed_existing:
+                    update_article_analysis(a["url"], a.get("summary", ""), a.get("category", "その他"), a.get("score", 1))
+                st.success(f"✅ 既存記事 {len(analyzed_existing)}件 のカテゴリを更新しました")
+            except Exception as e:
+                st.error(f"既存記事の分析エラー: {e}")
+
+    # DB から全記事を読み込んで表示
+    articles = load_all_articles()
+
+    if articles:
+        df = pd.DataFrame(articles)
+
+        if selected_categories:
+            df = df[df["category"].isin(selected_categories)]
+        if selected_cities:
+            df = df[df["city"].isin(selected_cities)]
+
+        def to_date(s):
+            m = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", str(s))
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else None
+        df["_date"] = df["published_at"].apply(to_date)
+        df = df[df["_date"].isna() | ((df["_date"] >= date_from) & (df["_date"] <= date_to))]
+        df = df.drop(columns=["_date"])
+
+        def parse_date(s):
+            m = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", str(s))
+            return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else (0, 0, 0)
+        df["_date_key"] = df["published_at"].apply(parse_date)
+        df = df.sort_values("_date_key", ascending=False).drop(columns=["_date_key"])
+
+        if st.session_state.pop("run_briefing", False):
+            try:
+                with st.spinner("AIブリーフィングを生成中..."):
+                    briefing_data, briefing_sources = generate_briefing(df.to_dict("records"))
+                render_briefing(briefing_data, briefing_sources)
+            except Exception as e:
+                st.warning(f"ブリーフィング生成エラー: {e}")
+
+        c1, c2 = st.columns(2)
+        c1.metric("総件数", len(df))
+        c2.metric("対象市町数", df["city"].nunique())
+
+        st.divider()
+
+        PAGE_SIZE = 50
+        total = len(df)
+        total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+
+        if "page" not in st.session_state:
+            st.session_state.page = 1
+        st.session_state.page = min(st.session_state.page, total_pages)
+
+        start = (st.session_state.page - 1) * PAGE_SIZE
+        page_df = df.iloc[start:start + PAGE_SIZE]
+
+        for _, row in page_df.iterrows():
+            published = row.get("published_at", "") or ""
+            pub_prefix = f"{published} ／ " if published else ""
+            url = row.get("url", "")
+            label = f"{pub_prefix}[{row['city']}] {row['title']}"
+            if url:
+                st.markdown(f"- [{label}]({url})")
+            else:
+                st.markdown(f"- {label}")
+
+        st.divider()
+        col_prev, col_info, col_next = st.columns([1, 2, 1])
+        with col_prev:
+            if st.button("◀ 前へ", disabled=st.session_state.page <= 1):
+                st.session_state.page -= 1
+                st.rerun()
+        with col_info:
+            st.markdown(
+                f"<div style='text-align:center; padding-top:6px;'>{st.session_state.page} / {total_pages} ページ（{total}件）</div>",
+                unsafe_allow_html=True,
+            )
+        with col_next:
+            if st.button("次へ ▶", disabled=st.session_state.page >= total_pages):
+                st.session_state.page += 1
+                st.rerun()
+    else:
+        st.info("「新着情報を取得・分析する」ボタンを押してください")
