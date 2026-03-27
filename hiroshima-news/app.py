@@ -105,52 +105,11 @@ if stats["last_fetch"]:
     st.sidebar.caption(f"📦 DB保存件数: {stats['total']}件")
     st.sidebar.caption(f"🕐 前回取得: {stats['last_fetch']}")
 
-# 上部2カラム：左（取得ボタン＋ブリーフィング）・右（SNSトレンド）
+# 上部2カラム：左（取得ボタン）・右（SNSトレンド）
 col_left, col_sns = st.columns([3, 2])
 
 with col_left:
-    if st.button("🔄 新着情報を取得・分析する", type="primary"):
-        known_urls = get_known_urls()
-
-        with st.spinner("市町村サイトからデータを収集中..."):
-            all_articles = fetch_all()
-
-        new_articles = [a for a in all_articles if a["url"] not in known_urls]
-
-        analyzed = []
-        if not new_articles:
-            st.info("前回取得以降、新しい記事はありませんでした。")
-        else:
-            try:
-                with st.spinner("AIで分析中..."):
-                    analyzed = analyze_articles(new_articles)
-                for a in analyzed:
-                    a.setdefault("summary", "")
-                    a.setdefault("category", "その他")
-                    a.setdefault("score", 1)
-                save_articles(analyzed)
-                st.success(f"✅ {len(analyzed)}件の新着記事を取得・保存しました")
-            except Exception as e:
-                st.error(f"分析エラー: {e}")
-
-        if analyzed:
-            try:
-                with st.spinner("AIブリーフィングを生成中..."):
-                    briefing_data, briefing_sources = generate_briefing(analyzed)
-                render_briefing(briefing_data, briefing_sources)
-            except Exception as e:
-                st.warning(f"ブリーフィング生成エラー: {e}")
-
-        uncategorized = get_uncategorized_articles()
-        if uncategorized:
-            try:
-                with st.spinner(f"既存の未分類記事 {len(uncategorized)}件 を分析中..."):
-                    analyzed_existing = analyze_articles(uncategorized)
-                for a in analyzed_existing:
-                    update_article_analysis(a["url"], a.get("summary", ""), a.get("category", "その他"), a.get("score", 1))
-                st.success(f"✅ 既存記事 {len(analyzed_existing)}件 のカテゴリを更新しました")
-            except Exception as e:
-                st.error(f"既存記事の分析エラー: {e}")
+    btn_clicked = st.button("🔄 新着情報を取得・分析する", type="primary")
 
 with col_sns:
     st.markdown("### 📱 SNSトレンド")
@@ -168,6 +127,50 @@ with col_sns:
 
     st.markdown("[SNSトレンドマップを開く →](https://sns-analyze.onrender.com/)")
     components.iframe("https://sns-analyze.onrender.com/", height=400, scrolling=True)
+
+# ボタン処理（カラム外でメッセージをフルワイド表示）
+if btn_clicked:
+    known_urls = get_known_urls()
+
+    with st.spinner("市町村サイトからデータを収集中..."):
+        all_articles = fetch_all()
+
+    new_articles = [a for a in all_articles if a["url"] not in known_urls]
+
+    analyzed = []
+    if not new_articles:
+        st.info("前回取得以降、新しい記事はありませんでした。")
+    else:
+        try:
+            with st.spinner("AIで分析中..."):
+                analyzed = analyze_articles(new_articles)
+            for a in analyzed:
+                a.setdefault("summary", "")
+                a.setdefault("category", "その他")
+                a.setdefault("score", 1)
+            save_articles(analyzed)
+            st.success(f"✅ {len(analyzed)}件の新着記事を取得・保存しました")
+        except Exception as e:
+            st.error(f"分析エラー: {e}")
+
+    if analyzed:
+        try:
+            with st.spinner("AIブリーフィングを生成中..."):
+                briefing_data, briefing_sources = generate_briefing(analyzed)
+            render_briefing(briefing_data, briefing_sources)
+        except Exception as e:
+            st.warning(f"ブリーフィング生成エラー: {e}")
+
+    uncategorized = get_uncategorized_articles()
+    if uncategorized:
+        try:
+            with st.spinner(f"既存の未分類記事 {len(uncategorized)}件 を分析中..."):
+                analyzed_existing = analyze_articles(uncategorized)
+            for a in analyzed_existing:
+                update_article_analysis(a["url"], a.get("summary", ""), a.get("category", "その他"), a.get("score", 1))
+            st.success(f"✅ 既存記事 {len(analyzed_existing)}件 のカテゴリを更新しました")
+        except Exception as e:
+            st.error(f"既存記事の分析エラー: {e}")
 
 # DB から全記事を読み込んで表示
 articles = load_all_articles()
