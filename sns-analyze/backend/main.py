@@ -560,6 +560,11 @@ async def startup_event():
 async def fetch_events():
     return EventsResponse(events=_cached_events, last_updated=_last_updated)
 
+@app.get("/api/admin/refresh")
+async def admin_refresh():
+    await refresh_cache()
+    return {"status": "ok", "last_updated": _last_updated, "count": len(_cached_events)}
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "timestamp": datetime.datetime.now().isoformat()}
