@@ -4,7 +4,10 @@ import streamlit.components.v1 as components
 import pandas as pd
 import re
 import requests
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone, datetime as _dt
+
+def _today_jst() -> date:
+    return _dt.now(timezone(timedelta(hours=9))).date()
 from scraper import fetch_all
 from analyzer import analyze_articles, generate_briefing
 from database import init_db, get_known_urls, save_articles, load_all_articles, get_stats, get_uncategorized_articles, update_article_analysis, delete_articles_without_date
@@ -106,8 +109,8 @@ selected_cities = st.sidebar.multiselect(
         "安芸太田町", "北広島町", "大崎上島町", "世羅町", "神石高原町",
     ],
 )
-date_from = st.sidebar.date_input("開始日", value=date.today())
-date_to = st.sidebar.date_input("終了日", value=date.today())
+date_from = st.sidebar.date_input("開始日", value=_today_jst())
+date_to = st.sidebar.date_input("終了日", value=_today_jst())
 # フィルター条件のブリーフィング
 st.sidebar.divider()
 if st.sidebar.button("📋 フィルター条件で検索・AIコメント", use_container_width=True, type="primary"):
