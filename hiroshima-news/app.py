@@ -105,12 +105,13 @@ if stats["last_fetch"]:
     st.sidebar.caption(f"📦 DB保存件数: {stats['total']}件")
     st.sidebar.caption(f"🕐 前回取得: {stats['last_fetch']}")
 
-# 上部2カラム：左（取得ボタン）・右（SNSトレンド）
-col_left, col_sns = st.columns([3, 2])
+# ボタン（全幅）
+btn_clicked = st.button("🔄 新着情報を取得・分析する", type="primary")
 
-with col_left:
-    btn_clicked = st.button("🔄 新着情報を取得・分析する", type="primary")
+# 2カラム：左（ブリーフィング）・右（SNSトレンド）
+col_briefing, col_sns = st.columns([3, 2])
 
+# SNSトレンド（常時表示）
 with col_sns:
     st.markdown("### 📱 SNSトレンド")
     try:
@@ -128,7 +129,7 @@ with col_sns:
     st.markdown("[SNSトレンドマップを開く →](https://sns-analyze.onrender.com/)")
     components.iframe("https://sns-analyze.onrender.com/", height=400, scrolling=True)
 
-# ボタン処理（カラム外でメッセージをフルワイド表示）
+# ボタン処理
 if btn_clicked:
     known_urls = get_known_urls()
 
@@ -157,7 +158,8 @@ if btn_clicked:
         try:
             with st.spinner("AIブリーフィングを生成中..."):
                 briefing_data, briefing_sources = generate_briefing(analyzed)
-            render_briefing(briefing_data, briefing_sources)
+            with col_briefing:
+                render_briefing(briefing_data, briefing_sources)
         except Exception as e:
             st.warning(f"ブリーフィング生成エラー: {e}")
 
@@ -200,7 +202,8 @@ if articles:
         try:
             with st.spinner("AIブリーフィングを生成中..."):
                 briefing_data, briefing_sources = generate_briefing(df.to_dict("records"))
-            render_briefing(briefing_data, briefing_sources)
+            with col_briefing:
+                render_briefing(briefing_data, briefing_sources)
         except Exception as e:
             st.warning(f"ブリーフィング生成エラー: {e}")
 
