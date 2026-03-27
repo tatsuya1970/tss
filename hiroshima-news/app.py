@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
@@ -16,6 +17,20 @@ st.set_page_config(
 )
 
 init_db()
+
+_LOCK_FILE = "/tmp/hiroshima_news_fetch.lock"
+
+def _is_fetching():
+    return os.path.exists(_LOCK_FILE)
+
+def _set_fetching(flag: bool):
+    if flag:
+        open(_LOCK_FILE, "w").close()
+    else:
+        try:
+            os.remove(_LOCK_FILE)
+        except OSError:
+            pass
 
 
 def render_briefing(data: dict, sources: list):
@@ -136,47 +151,54 @@ with col_main:
 
     # ボタン処理
     if btn_clicked:
-        known_urls = get_known_urls()
-
-        with st.spinner("市町村サイトからデータを収集中..."):
-            all_articles = fetch_all()
-
-        new_articles = [a for a in all_articles if a["url"] not in known_urls]
-
-        analyzed = []
-        if not new_articles:
-            st.info("前回取得以降、新しい記事はありませんでした。")
+        if _is_fetching():
+            st.warning("⚠️ 現在、他の方が検索中のためご利用いただけません。お手数ですが、しばらくしてから再度お試しください。")
         else:
+            _set_fetching(True)
             try:
-                with st.spinner("AIで分析中..."):
-                    analyzed = analyze_articles(new_articles)
-                for a in analyzed:
-                    a.setdefault("summary", "")
-                    a.setdefault("category", "その他")
-                    a.setdefault("score", 1)
-                save_articles(analyzed)
-                st.success(f"✅ {len(analyzed)}件の新着記事を取得・保存しました")
-            except Exception as e:
-                st.error(f"分析エラー: {e}")
+                known_urls = get_known_urls()
 
-        if analyzed:
-            try:
-                with st.spinner("AIブリーフィングを生成中..."):
-                    briefing_data, briefing_sources = generate_briefing(analyzed)
-                render_briefing(briefing_data, briefing_sources)
-            except Exception as e:
-                st.warning(f"ブリーフィング生成エラー: {e}")
+                with st.spinner("市町村サイトからデータを収集中..."):
+                    all_articles = fetch_all()
 
-        uncategorized = get_uncategorized_articles()
-        if uncategorized:
-            try:
-                with st.spinner(f"既存の未分類記事 {len(uncategorized)}件 を分析中..."):
-                    analyzed_existing = analyze_articles(uncategorized)
-                for a in analyzed_existing:
-                    update_article_analysis(a["url"], a.get("summary", ""), a.get("category", "その他"), a.get("score", 1))
-                st.success(f"✅ 既存記事 {len(analyzed_existing)}件 のカテゴリを更新しました")
-            except Exception as e:
-                st.error(f"既存記事の分析エラー: {e}")
+                new_articles = [a for a in all_articles if a["url"] not in known_urls]
+
+                analyzed = []
+                if not new_articles:
+                    st.info("前回取得以降、新しい記事はありませんでした。")
+                else:
+                    try:
+                        with st.spinner("AIで分析中..."):
+                            analyzed = analyze_articles(new_articles)
+                        for a in analyzed:
+                            a.setdefault("summary", "")
+                            a.setdefault("category", "その他")
+                            a.setdefault("score", 1)
+                        save_articles(analyzed)
+                        st.success(f"✅ {len(analyzed)}件の新着記事を取得・保存しました")
+                    except Exception as e:
+                        st.error(f"分析エラー: {e}")
+
+                if analyzed:
+                    try:
+                        with st.spinner("AIブリーフィングを生成中..."):
+                            briefing_data, briefing_sources = generate_briefing(analyzed)
+                        render_briefing(briefing_data, briefing_sources)
+                    except Exception as e:
+                        st.warning(f"ブリーフィング生成エラー: {e}")
+
+                uncategorized = get_uncategorized_articles()
+                if uncategorized:
+                    try:
+                        with st.spinner(f"既存の未分類記事 {len(uncategorized)}件 を分析中..."):
+                            analyzed_existing = analyze_articles(uncategorized)
+                        for a in analyzed_existing:
+                            update_article_analysis(a["url"], a.get("summary", ""), a.get("category", "その他"), a.get("score", 1))
+                        st.success(f"✅ 既存記事 {len(analyzed_existing)}件 のカテゴリを更新しました")
+                    except Exception as e:
+                        st.error(f"既存記事の分析エラー: {e}")
+            finally:
+                _set_fetching(False)
 
     # DB から全記事を読み込んで表示
     articles = load_all_articles()
