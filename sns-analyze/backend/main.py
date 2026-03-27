@@ -1,6 +1,5 @@
-import math
 import tweepy
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from pydantic import BaseModel
@@ -8,6 +7,9 @@ import datetime
 import os
 from dotenv import load_dotenv
 import re
+import pytz
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 load_dotenv()
 
@@ -20,6 +22,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_JST = pytz.timezone('Asia/Tokyo')
+_cached_events: List = []
+_last_updated: Optional[str] = None
+
+class EventsResponse(BaseModel):
+    events: List
+    last_updated: Optional[str] = None
 
 class TweetModel(BaseModel):
     id: str
@@ -496,68 +506,31 @@ def get_mock_events() -> List[EventModel]:
         ),
     ]
 
-RATE_LIMIT_WINDOW_SECONDS = 3600
-RATE_LIMIT_MAX_REQUESTS = 20
-RATE_LIMIT_BLOCK_SECONDS = 600
-ACCESS_HISTORY_BY_CLIENT = {}
-BLOCKED_UNTIL_BY_CLIENT = {}
+async def refresh_cache():
+    global _cached_events, _last_updated
+    import asyncio
+    print("Refreshing cache...")
+    x_events, ig_events = await asyncio.gather(
+        get_real_trends_from_x(),
+        get_real_trends_from_instagram()
+    )
+    _cached_events = x_events + ig_events
+    _last_updated = datetime.datetime.now(_JST).strftime("%Y/%m/%d %H:%M")
+    print(f"Cache refreshed: {len(_cached_events)} events at {_last_updated}")
 
+@app.on_event("startup")
+async def startup_event():
+    scheduler = AsyncIOScheduler(timezone=_JST)
+    scheduler.add_job(
+        refresh_cache,
+        CronTrigger(hour="9,12,15,18,21", minute=0, timezone=_JST)
+    )
+    scheduler.start()
+    await refresh_cache()
 
-def get_client_key(request: Request) -> str:
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
-
-    if request.client:
-        return request.client.host
-
-    return "unknown"
-
-@app.get("/api/events", response_model=List[EventModel])
-async def fetch_events(request: Request):
-    now = datetime.datetime.now(datetime.timezone.utc)
-    client_key = get_client_key(request)
-
-    blocked_until = BLOCKED_UNTIL_BY_CLIENT.get(client_key)
-    if blocked_until and now < blocked_until:
-        wait_seconds = (blocked_until - now).total_seconds()
-        wait_minutes = max(1, math.ceil(wait_seconds / 60))
-        raise HTTPException(
-            status_code=429,
-            detail=f"アクセス上限を超えたため、あと約{wait_minutes}分は利用できません。"
-        )
-
-    if blocked_until and now >= blocked_until:
-        BLOCKED_UNTIL_BY_CLIENT.pop(client_key, None)
-
-    access_history = ACCESS_HISTORY_BY_CLIENT.get(client_key, [])
-    access_history = [
-        access_time
-        for access_time in access_history
-        if (now - access_time).total_seconds() < RATE_LIMIT_WINDOW_SECONDS
-    ]
-    ACCESS_HISTORY_BY_CLIENT[client_key] = access_history
-
-    if len(access_history) >= RATE_LIMIT_MAX_REQUESTS:
-        BLOCKED_UNTIL_BY_CLIENT[client_key] = now + datetime.timedelta(seconds=RATE_LIMIT_BLOCK_SECONDS)
-        raise HTTPException(
-            status_code=429,
-            detail="1時間のアクセス上限（20回）に達しました。10分後に再度お試しください。"
-        )
-
-    access_history.append(now)
-    ACCESS_HISTORY_BY_CLIENT[client_key] = access_history
-
-    try:
-        import asyncio
-        x_events, ig_events = await asyncio.gather(
-            get_real_trends_from_x(),
-            get_real_trends_from_instagram()
-        )
-        return x_events + ig_events
-    except Exception as e:
-        print(f"Global error fetching from backend: {e}")
-        return []
+@app.get("/api/events", response_model=EventsResponse)
+async def fetch_events():
+    return EventsResponse(events=_cached_events, last_updated=_last_updated)
 
 @app.get("/api/health")
 async def health_check():

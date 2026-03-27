@@ -7,6 +7,7 @@ function App() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [events, setEvents] = useState<TrendEvent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   const params = new URLSearchParams(window.location.search);
   const initialLat = params.get('lat') ? parseFloat(params.get('lat')!) : undefined;
@@ -28,7 +29,8 @@ function App() {
         throw new Error('Network response was not ok');
       }
       const data = await response.json();
-      setEvents(data);
+      setEvents(data.events ?? data);
+      setLastUpdated(data.last_updated ?? null);
     } catch (error) {
       console.error('Failed to fetch events:', error);
     } finally {
@@ -36,8 +38,7 @@ function App() {
     }
   };
 
-  // 初回ロード時のみ取得（自動更新は無効）
-  // const timer = setInterval(fetchEvents, 60 * 60 * 1000); // 自動更新用（現在無効）
+  // キャッシュを取得（X APIは呼ばない）
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -53,8 +54,8 @@ function App() {
           events={events}
           onEventSelect={handleEventSelect}
           selectedEventId={selectedEventId}
-          onRefresh={fetchEvents}
           isLoading={loading}
+          lastUpdated={lastUpdated}
         />
       )}
       <Map events={events} selectedEventId={selectedEventId} initialLat={initialLat} initialLng={initialLng} initialZoom={initialZoom} />

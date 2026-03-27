@@ -113,13 +113,18 @@ with col_sns:
     st.markdown("### 📱 SNSトレンド")
     try:
         sns_resp = requests.get("https://sns-analyze.onrender.com/api/events", timeout=10)
-        sns_events = sns_resp.json() if sns_resp.status_code == 200 else []
+        sns_data = sns_resp.json() if sns_resp.status_code == 200 else {}
+        sns_events = sns_data.get("events", []) if isinstance(sns_data, dict) else sns_data
+        sns_last_updated = sns_data.get("last_updated") if isinstance(sns_data, dict) else None
     except Exception:
         sns_events = []
+        sns_last_updated = None
 
     if sns_events:
         for event in sns_events[:8]:
             st.markdown(f"・{event['name']}")
+    if sns_last_updated:
+        st.caption(f"最終更新: {sns_last_updated}")
     else:
         st.caption("データ取得中...")
 

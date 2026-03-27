@@ -1,46 +1,29 @@
-import { Flame, MapPin, RefreshCw } from 'lucide-react';
+import { Flame, MapPin } from 'lucide-react';
 import { type TrendEvent } from '../data/mockData';
 
 type Props = {
   events: TrendEvent[];
   onEventSelect: (eventId: string) => void;
   selectedEventId: string | null;
-  onRefresh: () => void;
   isLoading: boolean;
+  lastUpdated: string | null;
 }
 
-export const TrendSidebar = ({ events, onEventSelect, selectedEventId, onRefresh, isLoading }: Props) => {
+export const TrendSidebar = ({ events, onEventSelect, selectedEventId, isLoading, lastUpdated }: Props) => {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <div className="brand" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <MapPin size={28} color="#38bdf8" />
-            <span style={{ fontSize: '1.5rem', fontWeight: 700 }}>GeoTrend</span>
-          </div>
-          <button 
-            className="refresh-btn" 
-            onClick={onRefresh} 
-            disabled={isLoading}
-            style={{ 
-              background: 'rgba(255,255,255,0.05)', 
-              border: '1px solid rgba(255,255,255,0.1)', 
-              color: 'var(--text-main)',
-              padding: '8px',
-              borderRadius: '8px',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              transition: 'background 0.2s'
-            }}
-            title="最新のデータを取得 (APIを利用します)"
-          >
-            <RefreshCw size={18} className={isLoading ? "spinning" : ""} />
-          </button>
+        <div className="brand" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <MapPin size={28} color="#38bdf8" />
+          <span style={{ fontSize: '1.5rem', fontWeight: 700 }}>GeoTrend</span>
         </div>
         <p className="sidebar-desc">
           SNSの投稿データからリアルタイムに盛り上がっている場所やイベントを特定。
         </p>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px', lineHeight: '1.6' }}>
+          <div>🕐 更新時刻：9・12・15・18・21時</div>
+          <div>📅 最終更新：{isLoading ? '取得中...' : (lastUpdated ?? 'データなし')}</div>
+        </div>
       </div>
       
       <div className="trend-list">
