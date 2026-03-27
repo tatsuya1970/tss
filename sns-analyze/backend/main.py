@@ -34,7 +34,6 @@ _JST = datetime.timezone(datetime.timedelta(hours=9))
 _cached_events: List = []
 _last_updated: Optional[str] = None
 _CACHE_FILE = "/app/cache/events_cache.json"
-print(f"キャッシュファイルパス: {_CACHE_FILE}")
 
 def save_cache_to_file():
     import json
@@ -574,11 +573,6 @@ async def schedule_loop():
 @app.get("/api/events", response_model=EventsResponse)
 async def fetch_events():
     return EventsResponse(events=_cached_events, last_updated=_last_updated)
-
-@app.get("/api/admin/refresh")
-async def admin_refresh():
-    await refresh_cache()
-    return {"status": "ok", "last_updated": _last_updated, "count": len(_cached_events)}
 
 @app.get("/api/health")
 async def health_check():
