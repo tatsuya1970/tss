@@ -1,6 +1,8 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import re
+import requests
 from datetime import date, timedelta
 from scraper import fetch_all
 from analyzer import analyze_articles, generate_briefing
@@ -187,49 +189,71 @@ if articles:
         except Exception as e:
             st.warning(f"ブリーフィング生成エラー: {e}")
 
-    # 統計
-    col1, col2 = st.columns(2)
-    col1.metric("総件数", len(df))
-    col2.metric("対象市町数", df["city"].nunique())
+    col_news, col_sns = st.columns([3, 2])
 
-    st.divider()
+    with col_news:
+        # 統計
+        c1, c2 = st.columns(2)
+        c1.metric("総件数", len(df))
+        c2.metric("対象市町数", df["city"].nunique())
 
-    # ページネーション
-    PAGE_SIZE = 50
-    total = len(df)
-    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+        st.divider()
 
-    if "page" not in st.session_state:
-        st.session_state.page = 1
-    st.session_state.page = min(st.session_state.page, total_pages)
+        # ページネーション
+        PAGE_SIZE = 50
+        total = len(df)
+        total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
 
-    start = (st.session_state.page - 1) * PAGE_SIZE
-    page_df = df.iloc[start:start + PAGE_SIZE]
+        if "page" not in st.session_state:
+            st.session_state.page = 1
+        st.session_state.page = min(st.session_state.page, total_pages)
 
-    for _, row in page_df.iterrows():
-        published = row.get("published_at", "") or ""
-        pub_prefix = f"{published} ／ " if published else ""
-        url = row.get("url", "")
-        label = f"{pub_prefix}[{row['city']}] {row['title']}"
-        if url:
-            st.markdown(f"- [{label}]({url})")
+        start = (st.session_state.page - 1) * PAGE_SIZE
+        page_df = df.iloc[start:start + PAGE_SIZE]
+
+        for _, row in page_df.iterrows():
+            published = row.get("published_at", "") or ""
+            pub_prefix = f"{published} ／ " if published else ""
+            url = row.get("url", "")
+            label = f"{pub_prefix}[{row['city']}] {row['title']}"
+            if url:
+                st.markdown(f"- [{label}]({url})")
+            else:
+                st.markdown(f"- {label}")
+
+        st.divider()
+        col_prev, col_info, col_next = st.columns([1, 2, 1])
+        with col_prev:
+            if st.button("◀ 前へ", disabled=st.session_state.page <= 1):
+                st.session_state.page -= 1
+                st.rerun()
+        with col_info:
+            st.markdown(
+                f"<div style='text-align:center; padding-top:6px;'>{st.session_state.page} / {total_pages} ページ（{total}件）</div>",
+                unsafe_allow_html=True,
+            )
+        with col_next:
+            if st.button("次へ ▶", disabled=st.session_state.page >= total_pages):
+                st.session_state.page += 1
+                st.rerun()
+
+    with col_sns:
+        st.markdown("### 📱 SNSトレンド")
+        try:
+            sns_resp = requests.get("https://sns-analyze.onrender.com/api/events", timeout=10)
+            sns_events = sns_resp.json() if sns_resp.status_code == 200 else []
+        except Exception:
+            sns_events = []
+
+        if sns_events:
+            for event in sns_events[:8]:
+                st.markdown(f"・{event['name']}")
         else:
-            st.markdown(f"- {label}")
+            st.caption("データ取得中...")
 
-    st.divider()
-    col_prev, col_info, col_next = st.columns([1, 2, 1])
-    with col_prev:
-        if st.button("◀ 前へ", disabled=st.session_state.page <= 1):
-            st.session_state.page -= 1
-            st.rerun()
-    with col_info:
-        st.markdown(
-            f"<div style='text-align:center; padding-top:6px;'>{st.session_state.page} / {total_pages} ページ（{total}件）</div>",
-            unsafe_allow_html=True,
-        )
-    with col_next:
-        if st.button("次へ ▶", disabled=st.session_state.page >= total_pages):
-            st.session_state.page += 1
-            st.rerun()
+        st.markdown("[SNSトレンドマップを開く →](https://sns-analyze.onrender.com/)")
+        st.divider()
+        components.iframe("https://sns-analyze.onrender.com/", height=500, scrolling=True)
+
 else:
     st.info("「新着情報を取得・分析する」ボタンを押してください")
