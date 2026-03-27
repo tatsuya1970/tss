@@ -106,7 +106,7 @@ if stats["last_fetch"]:
     st.sidebar.caption(f"🕐 前回取得: {stats['last_fetch']}")
 
 # 2カラム：左（メイン）・右（SNSトレンド）
-col_main, col_sns = st.columns([3, 4])
+col_main, col_sns = st.columns([2, 1])
 
 # SNSトレンド（常時表示）
 with col_sns:
