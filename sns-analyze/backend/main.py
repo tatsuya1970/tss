@@ -26,6 +26,32 @@ app.add_middleware(
 _JST = pytz.timezone('Asia/Tokyo')
 _cached_events: List = []
 _last_updated: Optional[str] = None
+_CACHE_FILE = os.path.join(os.path.dirname(__file__), "events_cache.json")
+
+def save_cache_to_file():
+    import json
+    try:
+        data = {"events": [e.model_dump() for e in _cached_events], "last_updated": _last_updated}
+        with open(_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+        print(f"キャッシュをファイルに保存: {len(_cached_events)}件")
+    except Exception as e:
+        print(f"キャッシュ保存エラー: {e}")
+
+def load_cache_from_file():
+    global _cached_events, _last_updated
+    import json
+    try:
+        if os.path.exists(_CACHE_FILE):
+            with open(_CACHE_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            _cached_events = [EventModel(**e) for e in data.get("events", [])]
+            _last_updated = data.get("last_updated")
+            print(f"キャッシュをファイルから読み込み: {len(_cached_events)}件 ({_last_updated})")
+        else:
+            print("キャッシュファイルなし（次の定時更新まで待機）")
+    except Exception as e:
+        print(f"キャッシュ読み込みエラー: {e}")
 
 class EventsResponse(BaseModel):
     events: List
@@ -517,16 +543,17 @@ async def refresh_cache():
     _cached_events = x_events + ig_events
     _last_updated = datetime.datetime.now(_JST).strftime("%Y/%m/%d %H:%M")
     print(f"Cache refreshed: {len(_cached_events)} events at {_last_updated}")
+    save_cache_to_file()
 
 @app.on_event("startup")
 async def startup_event():
+    load_cache_from_file()
     scheduler = AsyncIOScheduler(timezone=_JST)
     scheduler.add_job(
         refresh_cache,
         CronTrigger(hour="9,12,15,18,21", minute=0, timezone=_JST)
     )
     scheduler.start()
-    await refresh_cache()
 
 @app.get("/api/events", response_model=EventsResponse)
 async def fetch_events():
