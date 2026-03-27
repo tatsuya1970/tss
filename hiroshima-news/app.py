@@ -90,6 +90,7 @@ button[data-testid="stSidebarOpenButton"] { display: none; }
 <div style="background-color:#E60012; padding:22px 32px 18px 32px; margin-bottom:24px; position:sticky; top:0; z-index:999;">
   <div style="color:#FFFFFF; font-size:3rem; font-weight:900; margin:0 0 10px 0; letter-spacing:0.02em; line-height:1.1;">広島県 市町情報</div>
   <div style="color:#FFB3BA; font-size:1rem; font-weight:600;">広島県23市町の最新情報を自動収集・分析</div>
+  <div style="color:#FFB3BA; font-size:0.75rem; margin-top:6px;">Operated by <a href="https://tatsuya1970.main.jp/" target="_blank" style="color:#FFB3BA;">Tatsuya Takemura</a></div>
 </div>
 """, unsafe_allow_html=True)
 
