@@ -7,9 +7,7 @@ import datetime
 import os
 from dotenv import load_dotenv
 import re
-import pytz
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
+import asyncio
 
 load_dotenv()
 
@@ -23,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_JST = pytz.timezone('Asia/Tokyo')
+_JST = datetime.timezone(datetime.timedelta(hours=9))
 _cached_events: List = []
 _last_updated: Optional[str] = None
 _CACHE_FILE = os.path.join(os.path.dirname(__file__), "events_cache.json")
@@ -546,15 +544,28 @@ async def refresh_cache():
     print(f"Cache refreshed: {len(_cached_events)} events at {_last_updated}")
     save_cache_to_file()
 
+async def schedule_loop():
+    update_hours = [9, 12, 15, 18, 21]
+    while True:
+        now = datetime.datetime.now(_JST)
+        next_update = None
+        for h in update_hours:
+            candidate = now.replace(hour=h, minute=0, second=0, microsecond=0)
+            if candidate > now:
+                next_update = candidate
+                break
+        if next_update is None:
+            tomorrow = now + datetime.timedelta(days=1)
+            next_update = tomorrow.replace(hour=9, minute=0, second=0, microsecond=0)
+        wait_seconds = (next_update - now).total_seconds()
+        print(f"次の更新: {next_update.strftime('%Y/%m/%d %H:%M')} ({int(wait_seconds/60)}分後)")
+        await asyncio.sleep(wait_seconds)
+        await refresh_cache()
+
 @app.on_event("startup")
 async def startup_event():
     load_cache_from_file()
-    scheduler = AsyncIOScheduler(timezone=_JST)
-    scheduler.add_job(
-        refresh_cache,
-        CronTrigger(hour="9,12,15,18,21", minute=0, timezone=_JST)
-    )
-    scheduler.start()
+    asyncio.create_task(schedule_loop())
 
 @app.get("/api/events", response_model=EventsResponse)
 async def fetch_events():
