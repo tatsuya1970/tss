@@ -110,7 +110,7 @@ selected_cities = st.sidebar.multiselect(
         "安芸太田町", "北広島町", "大崎上島町", "世羅町", "神石高原町",
     ],
 )
-date_from = st.sidebar.date_input("開始日", value=_today_jst())
+date_from = st.sidebar.date_input("開始日", value=_today_jst() - timedelta(days=30))
 date_to = st.sidebar.date_input("終了日", value=_today_jst())
 # フィルター条件のブリーフィング
 st.sidebar.divider()
