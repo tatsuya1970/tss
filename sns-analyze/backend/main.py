@@ -33,7 +33,7 @@ app.add_middleware(
 _JST = datetime.timezone(datetime.timedelta(hours=9))
 _cached_events: List = []
 _last_updated: Optional[str] = None
-_CACHE_FILE = os.path.join(os.path.dirname(__file__), "events_cache.json")
+_CACHE_FILE = "/app/cache/events_cache.json"
 print(f"キャッシュファイルパス: {_CACHE_FILE}")
 
 def save_cache_to_file():
