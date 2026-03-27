@@ -124,7 +124,7 @@ with col_sns:
         st.caption("データ取得中...")
 
     st.markdown("[SNSトレンドマップを開く →](https://sns-analyze.onrender.com/)")
-    components.iframe("https://sns-analyze.onrender.com/?lat=34.6&lng=132.7&zoom=9", height=400, scrolling=True)
+    components.iframe("https://sns-analyze.onrender.com/?lat=34.6&lng=132.7&zoom=9&maponly=true", height=400, scrolling=True)
 
 with col_main:
     btn_clicked = st.button("🔄 新着情報を取得・分析する", type="primary")

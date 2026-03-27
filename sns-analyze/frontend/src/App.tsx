@@ -12,6 +12,7 @@ function App() {
   const initialLat = params.get('lat') ? parseFloat(params.get('lat')!) : undefined;
   const initialLng = params.get('lng') ? parseFloat(params.get('lng')!) : undefined;
   const initialZoom = params.get('zoom') ? parseInt(params.get('zoom')!) : undefined;
+  const mapOnly = params.get('maponly') === 'true';
 
   // Fetch data from backend API
   const fetchEvents = async () => {
@@ -48,13 +49,15 @@ function App() {
 
   return (
     <div className="app-container">
-      <TrendSidebar 
-        events={events}
-        onEventSelect={handleEventSelect} 
-        selectedEventId={selectedEventId} 
-        onRefresh={fetchEvents}
-        isLoading={loading}
-      />
+      {!mapOnly && (
+        <TrendSidebar
+          events={events}
+          onEventSelect={handleEventSelect}
+          selectedEventId={selectedEventId}
+          onRefresh={fetchEvents}
+          isLoading={loading}
+        />
+      )}
       <Map events={events} selectedEventId={selectedEventId} initialLat={initialLat} initialLng={initialLng} initialZoom={initialZoom} />
       
       {loading && (
