@@ -27,6 +27,7 @@ _JST = pytz.timezone('Asia/Tokyo')
 _cached_events: List = []
 _last_updated: Optional[str] = None
 _CACHE_FILE = os.path.join(os.path.dirname(__file__), "events_cache.json")
+print(f"キャッシュファイルパス: {_CACHE_FILE}")
 
 def save_cache_to_file():
     import json
