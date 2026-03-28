@@ -24,6 +24,9 @@ export const TrendSidebar = ({ events, onEventSelect, selectedEventId, isLoading
           <div>🕐 更新時刻：9・12・15・18・21時</div>
           <div>📅 最終更新：{isLoading ? '取得中...' : (lastUpdated ?? 'データなし')}</div>
         </div>
+        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '10px' }}>
+          Operated by <a href="https://tatsuya1970.main.jp/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)' }}>Tatsuya Takemura</a>
+        </div>
       </div>
       
       <div className="trend-list">
