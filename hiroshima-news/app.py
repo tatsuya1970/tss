@@ -72,8 +72,10 @@ def render_briefing(data: dict, sources: list):
             url = url_map.get(idx, "")
             title = n.get("title", "")
             reason = n.get("reason", "")
+            city = sources[idx - 1].get("city", "") if 0 < idx <= len(sources) else ""
+            city_label = f"【{city}】" if city else ""
             link = f" [🔗]({url})" if url else ""
-            lines.append(f"{j}. **{title}** - {reason}{link}")
+            lines.append(f"{j}. **{city_label}{title}** - {reason}{link}")
         lines.append("")
 
     st.info("📋 **AIブリーフィング**\n\n" + "\n".join(lines))
