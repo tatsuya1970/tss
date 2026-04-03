@@ -330,31 +330,53 @@ def scrape_fuchu_city() -> list[dict]:
 
 # ── 三次市 ─────────────────────────────────────────────
 def scrape_miyoshi() -> list[dict]:
-    """三次市: 報道発表資料"""
+    """三次市: 報道発表資料（インデックス→月別ページ→PDFリンク一覧）"""
     import re
-    url = f"{BASE_URL_MIYOSHI}/site/houdousiryou/"
-    soup = get(url)
+    index_url = f"{BASE_URL_MIYOSHI}/site/houdousiryou/"
+    soup = get(index_url)
     if not soup:
         return []
+
+    # 最新の月別ページURL（/site/houdousiryou/数字.html）を取得
+    month_pattern = re.compile(r"/site/houdousiryou/(\d+)\.html$")
+    month_link = next(
+        (a["href"] for a in soup.select("a[href]") if month_pattern.search(a["href"])),
+        None
+    )
+    if not month_link:
+        return []
+
+    month_url = urljoin(BASE_URL_MIYOSHI, month_link)
+    month_soup = get(month_url)
+    if not month_soup:
+        return []
+
     articles = []
     seen = set()
-    article_pattern = re.compile(r"/site/houdousiryou/\d+\.html$")
-    for li in soup.select("li"):
-        a = li.find("a", href=True)
+    for tr in month_soup.select("table tr"):
+        tds = tr.select("td")
+        if len(tds) < 2:
+            continue
+        date_text = tds[0].get_text(strip=True)  # 例: "3月24日"
+        a = tds[1].find("a", href=True)
         if not a:
             continue
         href = a["href"]
-        title = a.get_text(strip=True)
-        if not article_pattern.search(href):
-            continue
-        if len(title) < 10 or title.isascii() or title in seen:
+        title = re.sub(r"\s*\[PDFファイル[^\]]*\]", "", a.get_text(strip=True)).strip()
+        if len(title) < 10 or title in seen:
             continue
         seen.add(title)
-        date_m = re.search(r"\d{4}年\d{1,2}月\d{1,2}日|\d{1,2}月\d{1,2}日", li.get_text())
+        # 発表日: 月別ページURLから年を補完（例: 令和8年3月 → 2026年）
+        reiwa_m = re.search(r"令和(\d+)年(\d{1,2})月", month_soup.title.text if month_soup.title else "")
+        if reiwa_m and re.match(r"\d{1,2}月\d{1,2}日", date_text):
+            year = 2018 + int(reiwa_m.group(1))
+            published_at = f"{year}年{date_text}"
+        else:
+            published_at = date_text
         articles.append({
             "city": "三次市", "title": title,
             "url": urljoin(BASE_URL_MIYOSHI, href),
-            "published_at": date_m.group(0) if date_m else "",
+            "published_at": published_at,
             "fetched_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
         })
         if len(articles) >= 10:
